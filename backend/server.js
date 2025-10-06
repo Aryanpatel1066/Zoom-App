@@ -3,16 +3,22 @@ import  dotenv from "dotenv"
 import connectDB from "./config/db.js"
 import authRoutes from "./routes/authRoutes.js"
 import cors from "cors"
+import cookieParser from "cookie-parser"; // <--- import
+
 // step1: connect the database
 dotenv.config()
 connectDB();
 
+
 const app = express()
 app.use(cors({
-    origin:"http://localhost:2810",
-    credentials: true
+    origin:"http://localhost:5173",
+    credentials: true,
+     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }))
 //middleware
+app.use(cookieParser()); // <--- add this before routes
 app.use(express.json())
 
 //routes
