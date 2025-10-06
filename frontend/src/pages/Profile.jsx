@@ -3,10 +3,12 @@ import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { errorToast, successToast } from "../utils/toast";
+import useSocket from "../hooks/useSocket";
 export default function Profile() {
   const [userData, setUserData] = useState(null);
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const socket = useSocket();
 
   const fetchProfile = async () => {
     try {
@@ -51,6 +53,8 @@ export default function Profile() {
       ) : (
         <p>Loading profile...</p>
       )}
+            <p>Socket connected!</p>
+
     </div>
   );
 }
