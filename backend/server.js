@@ -1,38 +1,50 @@
 import express from "express"
-import  dotenv from "dotenv"
+import dotenv from "dotenv"
+dotenv.config()
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import { createServer } from "http";
+import { Server  as IOServer} from "socket.io"
+import mongoose from "mongoose";
+import jwt from "jsonwebtoken"
 import connectDB from "./config/db.js"
 import authRoutes from "./routes/authRoutes.js"
-import cors from "cors"
-import cookieParser from "cookie-parser";  
-import {createServer} from "http"
-import { Server } from "socket.io"
+import roomRoutes from "./routes/roomRoutes.js"
+import chatRoutes from "./routes/chatRoutes.js"
 
-// step1: connect the database
-dotenv.config()
+//models used by socket 
+import Message from "./models/Message.js";
+import Room from "./models/Room.js";
+const app = express();
+//builting middleware
+app.use(cookieParser());
+app.use(express.json());
+app.use(cors({
+  origin: process.env.CLIENT_URL,
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}))
+//custom routes
+app.use("/zoom/api/v1/auth", authRoutes)
+app.use("/zoom/api/v1/rooms",roomRoutes)
+app.use("/zoom/api/v1/chat",chatRoutes)
+
+//connect the database
 connectDB();
-
-
-const app = express()
-const httpServer = createServer(app) //use for socket.io
-const io = new Server(httpServer, {
+ 
+//http and socket.IO
+ const httpServer = createServer(app) 
+const io = new IOServer(httpServer, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.CLIENT_URL,
     credentials: true,
   },
 });
 
-app.use(cors({
-    origin:"http://localhost:5173",
-    credentials: true,
-     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}))
-//middleware
-app.use(cookieParser()); // <--- add this before routes
-app.use(express.json())
 
+ 
 //routes
-app.use("/zoom/api/v1/auth",authRoutes)
 
 // 🔥 socket.io logic here
 io.on("connection", (socket) => {
