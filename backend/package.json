@@ -1,6 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "this file contain the backend related code for our zoom app",
   "main": "server.js",
   "scripts": {
@@ -11,6 +12,7 @@
   "author": "aryan patel",
   "license": "ISC",
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -19,7 +21,10 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.2",
     "nanoid": "^5.1.6",
-    "socket.io": "^4.8.1"
+    "redis": "^5.9.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "socket.io-redis": "^5.4.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
