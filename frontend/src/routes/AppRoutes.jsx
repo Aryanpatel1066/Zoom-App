@@ -3,7 +3,8 @@ import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Profile from "../pages/Profile";
 import ProtectedRoute from "../components/ProtectedRoute";
-
+import Landing from "../pages/Landing"
+import Room from "../pages/Room"
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<Navigate to="/profile" />} />
@@ -17,6 +18,22 @@ const AppRoutes = () => (
         </ProtectedRoute>
       } 
     />
+    <Route 
+  path="/home" 
+  element={
+    <ProtectedRoute>
+      <Landing />
+    </ProtectedRoute>
+  } 
+/>
+<Route 
+  path="/room/:roomCode" 
+  element={
+    <ProtectedRoute>
+      <Room />
+    </ProtectedRoute>
+  }
+/>
     <Route path="*" element={<Navigate to="/" />} />
   </Routes>
 );

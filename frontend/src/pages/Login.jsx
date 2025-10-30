@@ -20,7 +20,7 @@ export default function Login() {
       const res = await api.post("/auth/login", { email, password });
       login(res.data.user, res.data.accessToken);
        successToast("Successfully logged in!");
-      navigate("/profile");
+      navigate("/home");
     } catch (err) {
       // alert(err.response?.data?.message || "Login failed");
        errorToast( err.response?.data?.message || "Login failed") 

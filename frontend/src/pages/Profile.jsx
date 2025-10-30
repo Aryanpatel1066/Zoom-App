@@ -53,8 +53,7 @@ export default function Profile() {
       ) : (
         <p>Loading profile...</p>
       )}
-            <p>Socket connected!</p>
-
+ 
     </div>
   );
 }
