@@ -8,12 +8,14 @@ const generateAccessTokens = (userId) => {
     expiresIn: "15m",
   });
 };
-//generate the refreshtoken for short time life span USERID:PAYLOAD
+
+//generate the refreshtoken for long time life span USERID:PAYLOAD
 const generateRefreshTokens = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET, {
     expiresIn: "7d",
   });
 };
+
 // register controller
 export const register = async (req, res) => {
   try {
@@ -59,10 +61,10 @@ export const register = async (req, res) => {
     const accessToken = generateAccessTokens(user._id);
     const refreshToken = generateRefreshTokens(user._id);
 
-    // Send tokens  
+    // Set the refreshtoken in cookie at client side
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,   // can't be accessed via JS
-      secure: false,     // use HTTP
+      secure: false,     // use HTTP in production is true
       sameSite: "lax"
     });
 

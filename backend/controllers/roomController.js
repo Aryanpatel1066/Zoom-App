@@ -4,8 +4,7 @@ import { nanoid } from "nanoid"; // npm i nanoid
 export const createRoom = async (req, res) => {
   try {
     const code = nanoid(8); // short human friendly code
-    console.log(code)
-    const room = await Room.create({
+     const room = await Room.create({
       code,
       title: req.body.title || `Meeting-${code}`,
       host: req.user.id,

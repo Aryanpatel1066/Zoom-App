@@ -25,7 +25,7 @@ export default function Landing() {
       setLoading(false);
     }
   };
-
+//join existing room or meeting
   const handleJoin = () => {
     if (!joinCode.trim()) return alert("Enter a room code");
     navigate(`/room/${joinCode.trim()}`);

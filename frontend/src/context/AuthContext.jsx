@@ -11,7 +11,8 @@ export const AuthProvider = ({ children }) => {
   const login = (userData, accessToken) => {
     setUser(userData);
     localStorage.setItem("accessToken", accessToken);
-  };
+    api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+   };
 
   // Logout handler
    const logout = async () => {

@@ -1,5 +1,4 @@
- 
-import express from "express";
+ import express from "express";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -45,8 +44,7 @@ const start = async () => {
   try {
     // 1) connect Mongo
     await connectDB();
-    console.log("✅ MongoDB connected");
-
+ 
     // 2) try to connect Redis (adapter) - if Redis missing we log and continue w/o adapter
     const redisUrl = process.env.REDIS_URL || "redis://127.0.0.1:6379";
     let pubClient = null;

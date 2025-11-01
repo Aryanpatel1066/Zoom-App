@@ -5,7 +5,7 @@ Hey' every one i made a zoom app using mern tech stack
 
 🔌 Step 2: Socket.IO connection ✅
 
-🎥 Step 3: Room join logic
+🎥 Step 3: Room join logic ✅
 
 Users ek room join karenge (jaise meeting link).
 

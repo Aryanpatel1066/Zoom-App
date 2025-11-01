@@ -1,8 +1,8 @@
- import { useState } from "react";
+import { useState } from "react";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
- import { successToast,warnToast,errorToast } from "../utils/toast";
+import { successToast,errorToast } from "../utils/toast";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -11,19 +11,15 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    //   if (password.length < 6) {
-    //    warnToast("Password must be at least 6 characters!") 
-    //   return;
-    // }
-
     try {
       const res = await api.post("/auth/login", { email, password });
+      console.log(res.data)
       login(res.data.user, res.data.accessToken);
-       successToast("Successfully logged in!");
+      successToast("Successfully logged in!");
       navigate("/home");
     } catch (err) {
       // alert(err.response?.data?.message || "Login failed");
-       errorToast( err.response?.data?.message || "Login failed") 
+      errorToast(err.response?.data?.message || "Login failed")
     }
   };
 
@@ -54,6 +50,16 @@ export default function Login() {
         >
           Login
         </button>
+        <p className="text-center text-sm text-gray-600 mt-4">
+          Don’t have an account?{" "}
+          <span
+            onClick={() => navigate("/register")}
+            className="text-blue-600 hover:underline cursor-pointer"
+          >
+            Register here
+          </span>
+        </p>
+
       </form>
     </div>
   );

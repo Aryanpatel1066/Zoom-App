@@ -1,7 +1,7 @@
- import { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axios.js";
- import { successToast,warnToast,errorToast } from "../utils/toast";
+import { successToast, warnToast, errorToast } from "../utils/toast";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -13,7 +13,7 @@ const Register = () => {
   });
 
   const handleChange = (e) => {
-    setFormData({...formData, [e.target.name]: e.target.value});
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -74,6 +74,16 @@ const Register = () => {
         >
           Register
         </button>
+        <p className="text-center text-sm text-gray-600 mt-4">
+          Already have an account?{" "}
+          <span
+            onClick={() => navigate("/login")}
+            className="text-green-500 hover:underline cursor-pointer"
+          >
+            Login here
+          </span>
+        </p>
+
       </form>
     </div>
   );
