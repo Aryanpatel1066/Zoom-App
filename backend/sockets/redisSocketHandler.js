@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import Room from "../models/Room.js";
 import Message from "../models/Message.js";
-
+ 
 
 export const redisSocketHandler = async (io, redisClient) => {
   // In-memory fallback (single-process only)
@@ -12,6 +12,8 @@ export const redisSocketHandler = async (io, redisClient) => {
       socketId,
       userId: user.id,
       name: user.name,
+      email:user.email,
+      isHost:user.isHost,
       joinedAt: new Date().toISOString(),
     };
 
@@ -72,7 +74,7 @@ export const redisSocketHandler = async (io, redisClient) => {
   io.on("connection", (socket) => {
     console.log("⚡ socket connected:", socket.id);
 
-    socket.on("join-room", async ({ roomCode, user }, cb) => {
+   socket.on("join-room", async ({ roomCode, user }, cb) => {
       try {
         console.log("join-room request:", { socket: socket.id, roomCode, user });
 
@@ -81,10 +83,15 @@ export const redisSocketHandler = async (io, redisClient) => {
           console.warn("join-room: room not found:", roomCode);
           return cb && cb({ error: "Room not found" });
         }
-
+const isHost = user.id===room.host.toString();
         socket.join(roomCode);
-        await addParticipant(roomCode, socket.id, user);
+        // await addParticipant(roomCode, socket.id, user);
+const participant = {
+  ...user,
+  isHost,
+};
 
+await addParticipant(roomCode, socket.id, participant);
         const participants = await listParticipants(roomCode);
         io.to(roomCode).emit("participants-update", participants);
 
@@ -97,6 +104,7 @@ export const redisSocketHandler = async (io, redisClient) => {
         cb && cb({ error: "Server error" });
       }
     });
+ 
 
     socket.on("leave-room", async ({ roomCode }, cb) => {
       try {

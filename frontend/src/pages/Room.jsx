@@ -18,15 +18,17 @@ function ParticipantsList({ participants }) {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <div className="font-medium">{p.name}</div>
-                {p.isHost && (
+ <div className="font-medium">
+  {p.name} {p.isHost && <span className="text-sm font-semibold text-yellow-700">(Host)</span>}
+</div>
+
+                 {p.isHost && (
                   <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded">
                     Host
                   </span>
                 )}
               </div>
-              <div className="text-xs text-gray-500">id: {p.userId}</div>
-              {p.email && (
+               {p.email && (
                 <div className="text-xs text-gray-500">email: {p.email}</div>
               )}
             </div>
@@ -113,7 +115,7 @@ export default function Room() {
 
       s.emit(
         "join-room",
-        { roomCode, user: { id: userPayload.id, name: userPayload.name, email: userPayload.email, isHost: userPayload.isHost } },
+        { roomCode, user: { id: userPayload.id, name: userPayload.name, email: userPayload.email} },
         (res) => {
           if (res?.error) {
             alert(res.error);
