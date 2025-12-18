@@ -26,10 +26,32 @@ export default function Landing() {
     }
   };
 //join existing room or meeting
-  const handleJoin = () => {
-    if (!joinCode.trim()) return alert("Enter a room code");
-    navigate(`/room/${joinCode.trim()}`);
-  };
+  // const handleJoin = () => {
+  //   if (!joinCode.trim()) return alert("Enter a room code");
+  //   navigate(`/room/${joinCode.trim()}`);
+  // };
+const handleJoin = async () => {
+  if (!joinCode.trim()) {
+    alert("Enter a room code");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    // ✅ CHECK ROOM EXISTS
+    const res = await api.get(`/rooms/code/${joinCode.trim()}`);
+
+    const { room } = res.data;
+
+    // ✅ ONLY THEN NAVIGATE
+    navigate(`/room/${room.code}?id=${room._id}`);
+  } catch (err) {
+    alert(err?.response?.data?.message || "Room not found");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="max-w-3xl mx-auto mt-12 px-4">

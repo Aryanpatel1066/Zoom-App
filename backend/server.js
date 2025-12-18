@@ -1,4 +1,4 @@
- import express from "express";
+import express from "express";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -6,8 +6,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import { createServer } from "http";
 import { Server as IOServer } from "socket.io";
-import mongoose from "mongoose";
-
+ 
 import { createClient } from "redis";
 import { createAdapter } from "@socket.io/redis-adapter";
 

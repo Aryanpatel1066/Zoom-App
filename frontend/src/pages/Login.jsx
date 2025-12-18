@@ -16,7 +16,7 @@ export default function Login() {
       console.log(res.data)
       login(res.data.user, res.data.accessToken);
       successToast("Successfully logged in!");
-      navigate("/home");
+      navigate("/landing");
     } catch (err) {
       // alert(err.response?.data?.message || "Login failed");
       errorToast(err.response?.data?.message || "Login failed")

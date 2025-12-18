@@ -1,5 +1,4 @@
 import Message from "../models/Message.js";
-//to create messages
 export const getMessages = async (req, res) => {
   try {
     const { roomId } = req.params;

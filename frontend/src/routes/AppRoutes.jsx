@@ -5,6 +5,7 @@ import Profile from "../pages/Profile";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Landing from "../pages/Landing"
 import Room from "../pages/Room"
+import Home from "../pages/Home"
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<Navigate to="/profile" />} />
@@ -19,7 +20,7 @@ const AppRoutes = () => (
       } 
     />
     <Route 
-  path="/home" 
+  path="/landing" 
   element={
     <ProtectedRoute>
       <Landing />
