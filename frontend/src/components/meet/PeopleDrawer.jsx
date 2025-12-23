@@ -1,15 +1,17 @@
- import { X, Crown } from "lucide-react";
+import { X, Crown } from "lucide-react";
 
-export default function PeopleDrawer({ participants, onClose }) {
+export default function PeopleDrawer({ participants, onClose ,mySocketId}) {
   return (
-    <div className="
+    <div
+      className="
       w-80 h-full bg-[#1f1f1f]
       border-l border-[#2a2a2a]
       flex flex-col animate-slideIn
-    ">
+    "
+    >
       {/* HEADER */}
       <div className="p-4 flex items-center justify-between border-b border-[#2a2a2a]">
-        <span className="font-semibold">
+        <span className="font-semibold text-white">
           Participants ({participants.length})
         </span>
         <button onClick={onClose}>
@@ -23,18 +25,19 @@ export default function PeopleDrawer({ participants, onClose }) {
           const name = p.name || p.user?.name || "User";
           const email = p.email || p.user?.email;
           const isHost = p.isHost === true; // ONLY CREATOR
-
+           const isYou = p.socketId === mySocketId;
+        console.log(isYou)
           return (
-            <div
-              key={p.userId || i}
-              className="flex items-center gap-3"
-            >
+            <div key={p.socketId} className="flex items-center gap-3">
               {/* AVATAR */}
               <div
                 className={`
                   w-10 h-10 rounded-full flex items-center justify-center
                   font-semibold uppercase
-                  ${isHost ? "bg-blue-600 text-white" : "bg-gray-600 text-gray-200"}
+                  ${isHost
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-600 text-gray-200"
+                  }
                 `}
               >
                 {name.charAt(0)}
@@ -51,24 +54,25 @@ export default function PeopleDrawer({ participants, onClose }) {
                   >
                     {name}
                   </span>
+                  {isYou && (
+                    <span className="text-xs text-green-400">(You)</span>
+                  )}
 
                   {isHost && (
-                    <span className="
+                    <span
+                      className="
                       flex items-center gap-1
                       text-xs bg-blue-600/20 text-blue-400
                       px-2 py-0.5 rounded
-                    ">
+                    "
+                    >
                       <Crown size={12} />
                       Host
                     </span>
                   )}
                 </div>
 
-                {email && (
-                  <div className="text-xs text-gray-400">
-                    {email}
-                  </div>
-                )}
+                {email && <div className="text-xs text-gray-400">{email}</div>}
               </div>
             </div>
           );

@@ -1,13 +1,12 @@
- // src/components/ParticipantsList.jsx
 export default function ParticipantsList({ participants }) {
   return (
     <div className="p-3">
-      <h3 className="text-lg font-semibold mb-2">
+      <h3 className="text-lg font-semibold mb-2 text-gray-500">
         Participants ({participants?.length || 0})
       </h3>
       <ul>
         {participants?.map((p) => (
-          <li key={p.userId} className="flex items-center gap-3 py-2">
+          <li key={p.socketId} className="flex items-center gap-3 py-2">
             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm">
               {(p.name || "U").charAt(0)}
             </div>

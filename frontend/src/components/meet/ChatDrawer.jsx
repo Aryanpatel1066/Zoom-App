@@ -15,7 +15,7 @@ export default function ChatDrawer({
       animate-slideIn
     ">
       {/* HEADER */}
-      <div className="p-4 flex items-center justify-between border-b border-[#2a2a2a]">
+      <div className="p-4 flex items-center justify-between border-b border-[#2a2a2a] text-white">
         <span className="font-semibold">Meeting chat</span>
         <button onClick={onClose}>
           <X size={18} className="text-gray-400 hover:text-white" />
@@ -26,10 +26,10 @@ export default function ChatDrawer({
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((m, i) => (
           <div key={i}>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs font-medium text-white">
               {m.sender?.name || m.senderName || "User"}
             </p>
-            <p className="text-sm">{m.text}</p>
+            <p className="text-sm text-white">{m.text}</p>
           </div>
         ))}
         <div ref={messagesRef} />

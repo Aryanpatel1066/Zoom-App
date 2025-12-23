@@ -10,9 +10,11 @@ import PeopleDrawer from "../components/meet/PeopleDrawer";
 
 export default function Room() {
   const { user } = useAuth();
-  const { roomCode } = useParams();
+   const { roomCode } = useParams();
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get("id");
+  const [mySocketId, setMySocketId] = useState(null);
+
   const navigate = useNavigate();
 
   /* ---------------- SOCKET ---------------- */
@@ -30,6 +32,15 @@ export default function Room() {
   useEffect(() => {
     const socket = socketRef.current;
     if (!socket) return;
+
+ const handleConnect = () => {
+    setMySocketId(socket.id);
+  };
+  socket.on("connect",handleConnect)
+  // If already connected
+  if (socket.connected) {
+    handleConnect();
+  }
 
     const joinRoom = () => {
       if (!user?.id && !user?._id) {
@@ -82,6 +93,17 @@ export default function Room() {
 
     setText("");
   };
+  // END CALL OWN
+  const handleEndCall = () => {
+  const socket = socketRef.current;
+  if (!socket) return;
+ 
+  socket.emit("leave-room", { roomCode }, () => {
+    socket.disconnect();
+    navigate("/landing"); // or /landing /dashboard
+  });
+};
+
 
   /* ---------------- UI ---------------- */
   return (
@@ -103,7 +125,8 @@ export default function Room() {
 
       {activeTab === "people" && (
         <PeopleDrawer participants={participants}
-          onClose={() => setActiveTab(null)}   // 👈 CLOSE FROM DRAWER
+    mySocketId={mySocketId}
+          onClose={() => setActiveTab(null)}   
         />
       )}
 
@@ -111,6 +134,7 @@ export default function Room() {
       <BottomControls
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        onEndCall={handleEndCall}
       />
     </div>
   );

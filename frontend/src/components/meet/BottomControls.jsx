@@ -9,7 +9,7 @@
 } from "lucide-react";
 import { useState } from "react";
 
-export default function BottomControls({ activeTab, setActiveTab }) {
+export default function BottomControls({ activeTab, setActiveTab, onEndCall}) {
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
 
@@ -52,7 +52,7 @@ export default function BottomControls({ activeTab, setActiveTab }) {
       />
 
       {/* END CALL */}
-      <button className="bg-red-600 hover:bg-red-700 text-white
+      <button onClick={onEndCall} className="bg-red-600 hover:bg-red-700 text-white
         p-3 rounded-full transition">
         <PhoneOff size={20} />
       </button>
