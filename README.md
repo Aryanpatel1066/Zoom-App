@@ -17,7 +17,7 @@ User apna video/audio enable karega.
 
 WebRTC use karke ek dusre ka stream show hoga.
 
-🗣️ Step 5: Chat system (socket based)
+🗣️ Step 5: Chat system (socket based) ✅
 
 Ek chat box banayenge — message bhejenge via socket.emit.
 
