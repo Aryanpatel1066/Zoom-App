@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken"
-
+// import User from "../models/User"
 //protected route wheather it authntic or not
-export const authnticate = (req,res,next)=>{
+export const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -12,15 +12,16 @@ export const authnticate = (req,res,next)=>{
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-    req.user = decoded; // { id: userId }
+    req.user = { id: decoded.id };
     next();
   } catch (err) {
-    return res.status(403).json({ message: "Invalid or expired token" });
+    return res.status(401).json({ message: "Invalid or expired token" });
   }
-}
+};
+
 
 //validate register controller
- export const validateRegister = (req, res, next) => {
+export const validateRegister = (req, res, next) => {
   const { firstName, email, password, confirmPassword } = req.body;
 
   // Check missing fields

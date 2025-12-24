@@ -43,7 +43,7 @@ export const register = async (req, res) => {
 };
 
 //login controllers
- export const login = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -60,12 +60,14 @@ export const register = async (req, res) => {
     // Generate tokens
     const accessToken = generateAccessTokens(user._id);
     const refreshToken = generateRefreshTokens(user._id);
+    user.refreshToken = refreshToken;
+    await user.save();
 
     // Set the refreshtoken in cookie at client side
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,   // can't be accessed via JS
-      secure: false,     // use HTTP in production is true
-      sameSite: "lax"
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
     return res.status(200).json({
@@ -85,55 +87,75 @@ export const register = async (req, res) => {
 };
 
 //profile controllers
-export const profile = async (req,res) =>{
-  try{
+export const profile = async (req, res) => {
+  try {
     // send everything except password
-   const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user.id).select("-password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-        return res.status(200).json({ user });
+    return res.status(200).json({ user });
 
   }
-  catch(err){
+  catch (err) {
     return res.status(500)
-    .json({message:"something went wrong while show your profile"})
+      .json({ message: "something went wrong while show your profile" })
   }
 }
 
 //logout controllers
-export const logout = async (req,res)=>{
-  try{
-  res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      path:"/"
-    });
+// export const logout = async (req, res) => {
+//   try {
+//     res.clearCookie("refreshToken", {
+//       httpOnly: true,
+//       secure: false,
+//       sameSite: "lax",
+//       path: "/"
+//     });
 
-    return res.status(200).json({ message: "Logged out successfully" });
+//     return res.status(200).json({ message: "Logged out successfully" });
+//   }
+//   catch (err) {
+//     return res.status(500)
+//       .json({ message: "something went wrong while logout" })
+//   }
+export const logout = async (req, res) => {
+  const token = req.cookies.refreshToken;
+
+  if (token) {
+    const user = await User.findOne({ refreshToken: token });
+    if (user) {
+      user.refreshToken = null;
+      await user.save();
+    }
   }
-  catch(err){
-    return res.status(500)
-           .json({message:"something went wrong while logout"})
-  }
-}
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  });
+
+  res.json({ message: "Logged out successfully" });
+};
+
 
 //refresh token  re-assign the token to access token
-export const refreshToken = (req, res) => {
+export const refreshToken = async (req, res) => {
   try {
     const token = req.cookies.refreshToken;
     if (!token) return res.status(401).json({ message: "No refresh token" });
-console.log("Cookies received:", req.cookies);
 
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    const user = await User.findById(decoded.id);
 
-    const accessToken = jwt.sign({ id: decoded.id }, process.env.JWT_ACCESS_SECRET, {
-      expiresIn: "15m",
-    });
+    if (!user || user.refreshToken !== token) {
+      return res.status(403).json({ message: "Invalid refresh token" });
+    }
 
-    return res.status(200).json({ accessToken });
-  } catch (err) {
+    const accessToken = generateAccessTokens(user._id);
+    return res.json({ accessToken });
+  } catch {
     return res.status(403).json({ message: "Invalid refresh token" });
   }
 };

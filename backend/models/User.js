@@ -1,7 +1,7 @@
 import mongoose from 'mongoose'
 // this file contain user schema 
 const useSchema = new mongoose.Schema({
-     firstName: {
+  firstName: {
     type: String,
     required: true,
     trim: true,
@@ -16,5 +16,10 @@ const useSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-},{timestamps:true,versionKey:false})
-export default mongoose.model("User",useSchema)
+  refreshToken: {
+    type: String,
+    default: null
+  }
+
+}, { timestamps: true, versionKey: false })
+export default mongoose.model("User", useSchema)
