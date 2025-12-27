@@ -1,14 +1,13 @@
- import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { errorToast, successToast } from "../utils/toast";
-import useSocket from "../hooks/useSocket";
 export default function Profile() {
   const [userData, setUserData] = useState(null);
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const socket = useSocket();
+  // const socket = useSocket();
 
   const fetchProfile = async () => {
     try {
@@ -26,7 +25,7 @@ export default function Profile() {
     try {
       await api.post("/auth/logout");
       logout();
-      successToast("successfully! logout")
+      successToast("successfully! logout");
       navigate("/login");
     } catch {
       errorToast("Logout failed");
@@ -41,7 +40,9 @@ export default function Profile() {
     <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
       {userData ? (
         <div className="bg-white p-6 shadow-xl rounded-2xl w-96 text-center">
-          <h2 className="text-xl font-semibold mb-2">Welcome, {userData.firstName}</h2>
+          <h2 className="text-xl font-semibold mb-2">
+            Welcome, {userData.firstName}
+          </h2>
           <p className="text-gray-600 mb-4">{userData.email}</p>
           <button
             onClick={handleLogout}
@@ -53,7 +54,6 @@ export default function Profile() {
       ) : (
         <p>Loading profile...</p>
       )}
- 
     </div>
   );
 }

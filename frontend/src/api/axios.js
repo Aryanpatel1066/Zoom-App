@@ -1,17 +1,15 @@
-  import axios from "axios";
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:2810/zoom/api/v1",  
+  baseURL: "http://localhost:2810/zoom/api/v1",
   withCredentials: true, // send cookies automatically
 });
 
-// Intercept responses to handle expired access tokens auto renews access token silently
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // 🚫 Do not intercept refresh endpoint
     if (originalRequest.url.includes("/auth/refresh")) {
       return Promise.reject(error);
     }

@@ -122,7 +122,7 @@ export const redisSocketHandler = async (io, redisClient) => {
 
     socket.on("send-message", async (payload, cb) => {
       try {
-        console.log("send-message payload:", { socket: socket.id, payload });
+        // console.log("send-message payload:", { socket: socket.id, payload });
 
         let { roomCode, roomId, text, sender } = payload || {};
 

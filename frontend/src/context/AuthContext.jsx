@@ -1,38 +1,34 @@
-import { createContext, useContext, useState, useEffect } from "react";
+ import { createContext, useContext, useEffect, useState } from "react";
 import api from "../api/axios";
+import socket from "../socket";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // important: prevent flicker before auth check
+  const [loading, setLoading] = useState(true);
 
-  // Login handler
   const login = (userData, accessToken) => {
     setUser(userData);
     localStorage.setItem("accessToken", accessToken);
     localStorage.setItem("isLoggedIn", "true");
-
     api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+
+    socket.connect(); // ✅ connect after login
   };
 
-  // Logout handler
   const logout = async () => {
     try {
       await api.post("/auth/logout");
-    } catch (err) {
-      console.warn(
-        "Logout error (probably already logged out):",
-        err.response?.status
-      );
-    } finally {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("isLoggedIn"); // 👈 ADD
+    } catch {}
+    finally {
+      socket.disconnect(); // ✅ disconnect only here
+      localStorage.clear();
+      delete api.defaults.headers.common["Authorization"];
       setUser(null);
     }
   };
 
-  // So if there’s no accessToken in localStorage, we skip calling /refresh.
   useEffect(() => {
     const initAuth = async () => {
       const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -41,20 +37,21 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
         return;
       }
+
       try {
         const res = await api.get("/auth/refresh");
-
         const newAccessToken = res.data.accessToken;
 
         localStorage.setItem("accessToken", newAccessToken);
-        api.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${newAccessToken}`;
+        api.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
 
         const profileRes = await api.get("/auth/profile");
         setUser(profileRes.data.user);
+
+        socket.connect(); // ✅ connect once auth succeeds
       } catch {
-        // 👇 THIS IS NORMAL WHEN NOT LOGGED IN
+        socket.disconnect();
+        localStorage.clear();
         setUser(null);
       } finally {
         setLoading(false);

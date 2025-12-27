@@ -6,12 +6,10 @@ export default function Navbar() {
 
   return (
     <nav className="bg-gray-900 text-white px-6 py-3 flex justify-between items-center shadow-md">
-      {/* Left side: brand/logo */}
       <Link to="/landing" className="text-2xl font-bold text-blue-400">
         ZoomApp
       </Link>
 
-      {/* Right side: buttons */}
       <div className="flex items-center gap-4">
         {!user ? (
           <>

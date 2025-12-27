@@ -13,13 +13,11 @@ export default function Login() {
     e.preventDefault();
     try {
       const res = await api.post("/auth/login", { email, password });
-      console.log(res.data)
       login(res.data.user, res.data.accessToken);
       successToast("Successfully logged in!");
       navigate("/landing");
     } catch (err) {
-      // alert(err.response?.data?.message || "Login failed");
-      errorToast(err.response?.data?.message || "Login failed")
+       errorToast(err.response?.data?.message || "Login failed")
     }
   };
 

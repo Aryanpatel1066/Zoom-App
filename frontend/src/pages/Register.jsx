@@ -83,7 +83,6 @@ const Register = () => {
             Login here
           </span>
         </p>
-
       </form>
     </div>
   );

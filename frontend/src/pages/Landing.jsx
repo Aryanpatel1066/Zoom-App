@@ -14,7 +14,9 @@ export default function Landing() {
   const handleNewMeeting = async () => {
     try {
       setLoading(true);
-      const res = await api.post("/rooms", { title: `${user.firstName}'s meeting` });
+      const res = await api.post("/rooms", {
+        title: `${user.firstName}'s meeting`,
+      });
       const { room } = res.data;
       // redirect to room page using room code and id
       navigate(`/room/${room.code}?id=${room._id}`);
@@ -25,33 +27,30 @@ export default function Landing() {
       setLoading(false);
     }
   };
-//join existing room or meeting
-  // const handleJoin = () => {
-  //   if (!joinCode.trim()) return alert("Enter a room code");
-  //   navigate(`/room/${joinCode.trim()}`);
-  // };
-const handleJoin = async () => {
-  if (!joinCode.trim()) {
-    alert("Enter a room code");
-    return;
-  }
+  //join existing room or meeting
 
-  try {
-    setLoading(true);
+  const handleJoin = async () => {
+    if (!joinCode.trim()) {
+      alert("Enter a room code");
+      return;
+    }
 
-    // ✅ CHECK ROOM EXISTS
-    const res = await api.get(`/rooms/code/${joinCode.trim()}`);
+    try {
+      setLoading(true);
 
-    const { room } = res.data;
+      // ✅ CHECK ROOM EXISTS
+      const res = await api.get(`/rooms/code/${joinCode.trim()}`);
 
-    // ✅ ONLY THEN NAVIGATE
-    navigate(`/room/${room.code}?id=${room._id}`);
-  } catch (err) {
-    alert(err?.response?.data?.message || "Room not found");
-  } finally {
-    setLoading(false);
-  }
-};
+      const { room } = res.data;
+
+      // ✅ ONLY THEN NAVIGATE
+      navigate(`/room/${room.code}?id=${room._id}`);
+    } catch (err) {
+      alert(err?.response?.data?.message || "Room not found");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto mt-12 px-4">
@@ -60,7 +59,9 @@ const handleJoin = async () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="p-6 bg-white rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Start a new meeting</h2>
-          <p className="text-sm text-gray-600 mb-4">Create a meeting and invite others with the code.</p>
+          <p className="text-sm text-gray-600 mb-4">
+            Create a meeting and invite others with the code.
+          </p>
           <button
             onClick={handleNewMeeting}
             disabled={loading}
