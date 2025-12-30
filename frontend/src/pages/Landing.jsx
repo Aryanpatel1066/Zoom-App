@@ -10,7 +10,7 @@ import {
   Monitor,
 } from "lucide-react";
 import { landingSlides } from "../utils/landingSlides";
-
+import Footer from "../components/Footer";
 export default function Landing() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -57,7 +57,7 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f8f9ff] to-[#eef2ff] flex items-center px-6">
+    <>    <div className="min-h-screen bg-gradient-to-br from-[#f8f9ff] to-[#eef2ff] flex items-center px-6">
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
         {/* LEFT CONTENT */}
         <div>
@@ -121,19 +121,10 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* RIGHT SIDE VISUAL */}
-        {/* <div className="hidden md:flex justify-center">
-          <div className="relative w-[360px] h-[360px] rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-2xl flex items-center justify-center">
-            <div className="absolute inset-4 bg-white rounded-2xl flex items-center justify-center">
-              <Video size={96} className="text-blue-600" />
-            </div>
-          </div>
-        </div> */}
+
         {/* RIGHT SIDE SLIDER */}
         <div className="hidden md:flex justify-center">
-          {/* <div className="relative w-[380px] h-[380px] rounded-3xl 
-    bg-gradient-to-br from-blue-600 to-indigo-600 
-    shadow-2xl flex items-center justify-center overflow-hidden"> */}
+
           <div
             className="relative w-[380px] h-[380px] rounded-3xl 
   bg-gradient-to-br from-blue-500/30 via-indigo-500/30 to-purple-500/30
@@ -150,9 +141,8 @@ export default function Landing() {
                 return (
                   <div
                     key={index}
-                    className={`absolute transition-opacity duration-700 ${
-                      index === activeSlide ? "opacity-100" : "opacity-0"
-                    }`}
+                    className={`absolute transition-opacity duration-700 ${index === activeSlide ? "opacity-100" : "opacity-0"
+                      }`}
                   >
                     <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-100 flex items-center justify-center">
                       <Icon size={28} className="text-blue-600" />
@@ -173,9 +163,8 @@ export default function Landing() {
                 {landingSlides.map((_, i) => (
                   <span
                     key={i}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      i === activeSlide ? "bg-blue-600 w-5" : "bg-gray-300 w-2"
-                    }`}
+                    className={`h-2 rounded-full transition-all duration-300 ${i === activeSlide ? "bg-blue-600 w-5" : "bg-gray-300 w-2"
+                      }`}
                   />
                 ))}
               </div>
@@ -184,17 +173,22 @@ export default function Landing() {
         </div>
       </div>
     </div>
-  );
+    <Footer/>
+    </>
+      );
 }
 
-/* Feature Item */
-function Feature({ icon: Icon, label }) {
+      /* Feature Item */
+      function Feature({icon: Icon, label }) {
   return (
-    <div className="flex items-center gap-3 text-gray-700">
-      <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-        <Icon size={18} className="text-blue-600" />
-      </div>
-      <span className="text-sm font-medium">{label}</span>
-    </div>
-  );
+      <>
+        {" "}
+        <div className="flex items-center gap-3 text-gray-700">
+          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+            <Icon size={18} className="text-blue-600" />
+          </div>
+          <span className="text-sm font-medium">{label}</span>
+        </div>
+      </>
+      );
 }
