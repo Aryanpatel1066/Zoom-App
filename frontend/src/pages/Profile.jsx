@@ -3,11 +3,12 @@ import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { errorToast, successToast } from "../utils/toast";
+import { User, Mail, LogOut } from "lucide-react";
+
 export default function Profile() {
   const [userData, setUserData] = useState(null);
   const { logout } = useAuth();
   const navigate = useNavigate();
-  // const socket = useSocket();
 
   const fetchProfile = async () => {
     try {
@@ -16,8 +17,8 @@ export default function Profile() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUserData(res.data.user);
-    } catch (err) {
-      console.error("Profile fetch failed:", err);
+    } catch {
+      errorToast("Failed to load profile");
     }
   };
 
@@ -25,7 +26,7 @@ export default function Profile() {
     try {
       await api.post("/auth/logout");
       logout();
-      successToast("successfully! logout");
+      successToast("Logged out successfully");
       navigate("/login");
     } catch {
       errorToast("Logout failed");
@@ -37,17 +38,26 @@ export default function Profile() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f8f9ff] to-[#eef2ff] px-4">
       {userData ? (
-        <div className="bg-white p-6 shadow-xl rounded-2xl w-96 text-center">
-          <h2 className="text-xl font-semibold mb-2">
-            Welcome, {userData.firstName}
-          </h2>
-          <p className="text-gray-600 mb-4">{userData.email}</p>
+        <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm text-center">
+          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+            <User className="text-blue-600" size={36} />
+          </div>
+
+          <h2 className="text-2xl font-bold mb-1">{userData.firstName}</h2>
+
+          <div className="flex items-center justify-center gap-2 text-gray-500 mb-6">
+            <Mail size={16} />
+            {userData.email}
+          </div>
+
           <button
             onClick={handleLogout}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl
+              bg-red-500 hover:bg-red-600 text-white transition"
           >
+            <LogOut size={18} />
             Logout
           </button>
         </div>
