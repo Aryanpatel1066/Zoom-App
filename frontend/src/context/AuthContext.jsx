@@ -1,4 +1,4 @@
- import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import api from "../api/axios";
 import socket from "../socket";
 
@@ -12,9 +12,10 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     localStorage.setItem("accessToken", accessToken);
     localStorage.setItem("isLoggedIn", "true");
+
     api.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
 
-    socket.connect(); // ✅ connect after login
+    socket.connect();
   };
 
   const logout = async () => {
@@ -22,7 +23,7 @@ export const AuthProvider = ({ children }) => {
       await api.post("/auth/logout");
     } catch {}
     finally {
-      socket.disconnect(); // ✅ disconnect only here
+      socket.disconnect();
       localStorage.clear();
       delete api.defaults.headers.common["Authorization"];
       setUser(null);
@@ -31,24 +32,20 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      const isLoggedIn = localStorage.getItem("isLoggedIn");
+      const token = localStorage.getItem("accessToken");
 
-      if (!isLoggedIn) {
+      if (!token) {
         setLoading(false);
         return;
       }
 
       try {
-        const res = await api.get("/auth/refresh");
-        const newAccessToken = res.data.accessToken;
-
-        localStorage.setItem("accessToken", newAccessToken);
-        api.defaults.headers.common["Authorization"] = `Bearer ${newAccessToken}`;
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
         const profileRes = await api.get("/auth/profile");
         setUser(profileRes.data.user);
 
-        socket.connect(); // ✅ connect once auth succeeds
+        socket.connect();
       } catch {
         socket.disconnect();
         localStorage.clear();

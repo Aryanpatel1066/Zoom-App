@@ -9,13 +9,7 @@ const generateAccessTokens = (userId) => {
   });
 };
 
-//generate the refreshtoken for long time life span USERID:PAYLOAD
-const generateRefreshTokens = (userId) => {
-  return jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: "7d",
-  });
-};
-
+ 
 // register controller
 export const register = async (req, res) => {
   try {
@@ -59,17 +53,9 @@ export const login = async (req, res) => {
 
     // Generate tokens
     const accessToken = generateAccessTokens(user._id);
-    const refreshToken = generateRefreshTokens(user._id);
-    user.refreshToken = refreshToken;
-    await user.save();
+     await user.save();
 
-    // Set the refreshtoken in cookie at client side
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    });
-
+ 
     return res.status(200).json({
       message: "Login successful",
       accessToken,
@@ -105,42 +91,9 @@ export const profile = async (req, res) => {
 
 //logout controllers
 export const logout = async (req, res) => {
-  const token = req.cookies.refreshToken;
-
-  if (token) {
-    const user = await User.findOne({ refreshToken: token });
-    if (user) {
-      user.refreshToken = null;
-      await user.save();
-    }
-  }
-
-  res.clearCookie("refreshToken", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-  });
-
+  
   res.json({ message: "Logged out successfully" });
 };
 
 
-//refresh token  re-assign the token to access token
-export const refreshToken = async (req, res) => {
-  try {
-    const token = req.cookies.refreshToken;
-    if (!token) return res.status(401).json({ message: "No refresh token" });
-
-    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    const user = await User.findById(decoded.id);
-
-    if (!user || user.refreshToken !== token) {
-      return res.status(403).json({ message: "Invalid refresh token" });
-    }
-
-    const accessToken = generateAccessTokens(user._id);
-    return res.json({ accessToken });
-  } catch {
-    return res.status(403).json({ message: "Invalid refresh token" });
-  }
-};
+ 
