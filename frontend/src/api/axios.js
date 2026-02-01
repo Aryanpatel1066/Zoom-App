@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:2810/zoom/api/v1",
+  // baseURL: "http://localhost:2810/zoom/api/v1",
+    baseURL: "https://zoom-app-vxyc.onrender.com/zoom/api/v1",
   withCredentials: true,
 });
 
