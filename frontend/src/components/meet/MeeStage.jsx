@@ -1,7 +1,7 @@
-// FIXED MeetStage Component - Properly displays all participants
+// COMPLETELY FIXED MeetStage Component - Remote videos working
 // File: frontend/components/meet/MeetStage.jsx
 
-import React, { memo, useEffect, useRef, useMemo } from "react";
+import React, { memo, useEffect, useRef, useMemo, useState } from "react";
 import { useMeeting } from "../../context/MeetingContext";
 
 function MeetStage() {
@@ -18,72 +18,46 @@ function MeetStage() {
 
   const localVideoRef = useRef(null);
   const remoteVideoRefs = useRef(new Map());
+  const [remoteStreamsList, setRemoteStreamsList] = useState([]);
 
-  console.log("🎬 MeetStage Render:", {
-    localStreamActive: !!localStream,
-    participantsCount: participants.length,
-    remoteStreamsCount: remoteStreams.size,
+  console.log("🎬 MeetStage Debug:", {
     mySocketId,
+    localStreamReady: !!localStream,
+    participantsTotal: participants.length,
+    remoteStreamsMapSize: remoteStreams.size,
+    remoteStreamsList: remoteStreamsList.length,
+    participantIds: participants.map((p) => p.socketId),
+    remoteStreamIds: Array.from(remoteStreams.keys()),
   });
 
-  // Calculate grid columns based on total participant count (including self)
-  const totalParticipants = participants.length + (localStream ? 1 : 0);
-  const gridCols = useMemo(() => {
-    if (totalParticipants <= 1) return "grid-cols-1";
-    if (totalParticipants <= 4) return "grid-cols-2";
-    if (totalParticipants <= 6) return "grid-cols-3";
-    if (totalParticipants <= 9) return "grid-cols-3";
-    return "grid-cols-4";
-  }, [totalParticipants]);
+  // Update remote streams list whenever remoteStreams map changes
+  useEffect(() => {
+    const streamsList = Array.from(remoteStreams.entries()).map(([peerId, stream]) => ({
+      peerId,
+      stream,
+    }));
+    setRemoteStreamsList(streamsList);
+    console.log("📊 Updated remote streams list:", streamsList.length);
+  }, [remoteStreams]);
 
-  // Set local video stream
+  // Attach local video
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
-      console.log("✅ Local video stream attached");
+      console.log("✅ Local video attached");
     }
   }, [localStream]);
 
-  // Update remote video streams
-  useEffect(() => {
-    console.log("🔄 Updating remote video streams:", {
-      remoteStreamsCount: remoteStreams.size,
-      keys: Array.from(remoteStreams.keys()),
-    });
-
-    remoteStreams.forEach((stream, peerId) => {
-      let videoElement = remoteVideoRefs.current.get(peerId);
-      
-      if (!videoElement) {
-        videoElement = document.createElement("video");
-        videoElement.autoplay = true;
-        videoElement.playsinline = true;
-        remoteVideoRefs.current.set(peerId, videoElement);
-      }
-
-      if (videoElement && stream) {
-        videoElement.srcObject = stream;
-        console.log(`✅ Remote video attached for peer: ${peerId}`);
-      }
-    });
-
-    // Cleanup removed peers
-    const peersToRemove = [];
-    for (const peerId of remoteVideoRefs.current.keys()) {
-      if (!remoteStreams.has(peerId)) {
-        peersToRemove.push(peerId);
-      }
-    }
-
-    peersToRemove.forEach((peerId) => {
-      const videoElement = remoteVideoRefs.current.get(peerId);
-      if (videoElement && videoElement.srcObject) {
-        videoElement.srcObject.getTracks().forEach((track) => track.stop());
-      }
-      remoteVideoRefs.current.delete(peerId);
-      console.log(`🔌 Removed video for peer: ${peerId}`);
-    });
-  }, [remoteStreams]);
+  // Calculate grid layout
+  const totalSlots = 1 + remoteStreamsList.length; // 1 for local
+  const gridCols = useMemo(() => {
+    if (totalSlots <= 1) return "grid-cols-1";
+    if (totalSlots <= 2) return "grid-cols-2";
+    if (totalSlots <= 4) return "grid-cols-2";
+    if (totalSlots <= 6) return "grid-cols-3";
+    if (totalSlots <= 9) return "grid-cols-3";
+    return "grid-cols-4";
+  }, [totalSlots]);
 
   // Get participant info
   const getParticipantInfo = (socketId) => {
@@ -96,33 +70,31 @@ function MeetStage() {
     };
   };
 
-  // Loading state
   if (connecting) {
     return (
       <div className="flex-1 flex items-center justify-center bg-black">
         <div className="text-center text-white">
-          <div className="inline-block">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <div className="inline-block mb-4">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
           </div>
-          <p className="mt-4 text-lg font-semibold">Setting up your camera...</p>
-          {connectionError && (
-            <p className="mt-2 text-sm text-red-400">{connectionError}</p>
-          )}
+          <p className="text-lg font-semibold">Setting up your camera...</p>
+          {connectionError && <p className="mt-2 text-sm text-red-400">{connectionError}</p>}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 p-4 bg-black overflow-auto">
+    <div className="flex-1 p-3 bg-black overflow-auto flex flex-col">
       {connectionError && (
-        <div className="absolute top-4 right-4 bg-red-600/20 border border-red-600 text-red-400 px-4 py-2 rounded">
+        <div className="mb-3 bg-red-600/20 border border-red-600 text-red-400 px-3 py-2 rounded text-sm">
           {connectionError}
         </div>
       )}
 
-      <div className={`grid ${gridCols} gap-3 h-full auto-rows-fr`}>
-        {/* LOCAL VIDEO */}
+      {/* Main Grid */}
+      <div className={`grid ${gridCols} gap-2 flex-1 auto-rows-fr`}>
+        {/* LOCAL VIDEO - Always shown first */}
         {localStream && (
           <VideoTile
             ref={localVideoRef}
@@ -131,27 +103,18 @@ function MeetStage() {
             audioEnabled={micOn}
             videoEnabled={camOn}
             isHost={participants.find((p) => p.socketId === mySocketId)?.isHost}
+            isYou={true}
           />
         )}
 
-        {/* REMOTE VIDEOS */}
-        {participants.length > 0 ? (
-          participants.map((participant) => {
-            // Don't show self twice
-            if (participant.socketId === mySocketId) return null;
-
-            const stream = remoteStreams.get(participant.socketId);
-            const info = getParticipantInfo(participant.socketId);
-
-            console.log(`🎥 Rendering remote video for ${info.name}:`, {
-              hasStream: !!stream,
-              socketId: participant.socketId,
-            });
-
+        {/* REMOTE VIDEOS - From remoteStreams map */}
+        {remoteStreamsList.length > 0 ? (
+          remoteStreamsList.map(({ peerId, stream }) => {
+            const info = getParticipantInfo(peerId);
             return (
               <RemoteVideoTile
-                key={participant.socketId}
-                peerId={participant.socketId}
+                key={peerId}
+                peerId={peerId}
                 name={info.name}
                 stream={stream}
                 audioEnabled={info.audio}
@@ -161,27 +124,30 @@ function MeetStage() {
             );
           })
         ) : (
-          <div className="col-span-full flex items-center justify-center text-gray-400">
-            <p>Waiting for other participants to join...</p>
+          <div className="col-span-full flex items-center justify-center text-gray-400 text-center py-8">
+            <div>
+              <p className="text-lg mb-2">👥</p>
+              <p>Waiting for other participants to join...</p>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Debug Info */}
-      <div className="absolute bottom-20 left-4 text-xs text-gray-500 max-w-xs">
-        <div>Total: {totalParticipants} participants</div>
-        <div>Remote streams: {remoteStreams.size}</div>
+      {/* Debug Footer */}
+      <div className="mt-2 text-xs text-gray-500 text-center space-y-1">
+        <div>Total: {totalSlots} participant{totalSlots !== 1 ? "s" : ""}</div>
+        <div>Remote streams: {remoteStreamsList.length}</div>
         <div>Local stream: {localStream ? "✅" : "❌"}</div>
       </div>
     </div>
   );
 }
 
-// Local Video Tile Component
+// Local Video Component
 const VideoTile = memo(
   React.forwardRef(
-    ({ name, isLocal, audioEnabled, videoEnabled, isHost }, ref) => (
-      <div className="relative bg-zinc-900 rounded-xl overflow-hidden flex items-center justify-center h-full shadow-lg border border-zinc-800">
+    ({ name, isLocal, audioEnabled, videoEnabled, isHost, isYou }, ref) => (
+      <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-lg overflow-hidden flex items-center justify-center h-full shadow-lg border border-gray-700 hover:border-gray-600 transition-colors">
         {videoEnabled ? (
           <video
             ref={ref}
@@ -193,36 +159,36 @@ const VideoTile = memo(
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
             <div className="text-center">
-              <div className="text-6xl font-bold text-gray-600 mb-2">
+              <div className="text-5xl font-bold text-gray-600 mb-2">
                 {name.charAt(0).toUpperCase()}
               </div>
-              <div className="text-sm text-gray-400">{name}</div>
+              <div className="text-xs text-gray-400">{name}</div>
             </div>
           </div>
         )}
 
-        {/* Info Overlay */}
-        <div className="absolute bottom-2 left-2 flex items-center gap-2 z-10">
-          <div className="text-white text-xs font-medium bg-black/70 px-2 py-1 rounded">
+        {/* Name Badge */}
+        <div className="absolute bottom-2 left-2 z-20">
+          <div className="bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded whitespace-nowrap">
             {name}
-            {isLocal && " (You)"}
+            {isYou && " (You)"}
           </div>
         </div>
 
-        {/* Media Status Indicators */}
-        <div className="absolute top-2 right-2 flex gap-1 z-10">
+        {/* Status Indicators */}
+        <div className="absolute top-2 right-2 flex gap-1 z-20">
           {!audioEnabled && (
-            <div className="bg-red-600/80 p-2 rounded-full tooltip" title="Muted">
+            <div className="bg-red-600/80 hover:bg-red-700 p-1.5 rounded-full" title="Microphone muted">
               <span className="text-white text-xs">🔇</span>
             </div>
           )}
           {!videoEnabled && (
-            <div className="bg-red-600/80 p-2 rounded-full tooltip" title="Camera off">
+            <div className="bg-red-600/80 hover:bg-red-700 p-1.5 rounded-full" title="Camera off">
               <span className="text-white text-xs">📹</span>
             </div>
           )}
           {isHost && (
-            <div className="bg-blue-600/80 p-2 rounded-full tooltip" title="Host">
+            <div className="bg-blue-600/80 hover:bg-blue-700 p-1.5 rounded-full" title="Host">
               <span className="text-white text-xs">👑</span>
             </div>
           )}
@@ -234,71 +200,83 @@ const VideoTile = memo(
 
 VideoTile.displayName = "VideoTile";
 
-// Remote Video Tile Component
+// Remote Video Component
 const RemoteVideoTile = memo(({ peerId, name, stream, audioEnabled, videoEnabled, isHost }) => {
   const videoRef = useRef(null);
+  const [streamReady, setStreamReady] = useState(!!stream);
 
   useEffect(() => {
+    console.log(`🎥 Setting remote video for ${name} (${peerId}):`, {
+      hasStream: !!stream,
+      videoReady: videoRef.current ? "yes" : "no",
+    });
+
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
-      console.log(`✅ Remote video element set for ${peerId}`);
+      setStreamReady(true);
+    } else {
+      setStreamReady(false);
     }
-  }, [stream, peerId]);
+  }, [stream, peerId, name]);
 
   return (
-    <div className="relative bg-zinc-900 rounded-xl overflow-hidden flex items-center justify-center h-full shadow-lg border border-zinc-800">
-      {videoEnabled && stream ? (
+    <div className="relative bg-gradient-to-br from-gray-900 to-black rounded-lg overflow-hidden flex items-center justify-center h-full shadow-lg border border-gray-700 hover:border-gray-600 transition-colors">
+      {streamReady && stream ? (
         <video
           ref={videoRef}
           autoPlay
           playsInline
           className="w-full h-full object-cover"
+          onLoadedMetadata={() => {
+            console.log(`✅ Remote video metadata loaded: ${name}`);
+          }}
+          onPlay={() => {
+            console.log(`▶️ Remote video playing: ${name}`);
+          }}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
           <div className="text-center">
-            <div className="text-6xl font-bold text-gray-600 mb-2">
+            <div className="text-5xl font-bold text-gray-600 mb-2">
               {name.charAt(0).toUpperCase()}
             </div>
-            <div className="text-sm text-gray-400">{name}</div>
+            <div className="text-xs text-gray-400">{name}</div>
           </div>
         </div>
       )}
 
-      {/* Info Overlay */}
-      <div className="absolute bottom-2 left-2 z-10">
-        <div className="text-white text-xs font-medium bg-black/70 px-2 py-1 rounded">
+      {/* Name Badge */}
+      <div className="absolute bottom-2 left-2 z-20">
+        <div className="bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded">
           {name}
         </div>
       </div>
 
-      {/* Media Status Indicators */}
-      <div className="absolute top-2 right-2 flex gap-1 z-10">
+      {/* Status Indicators */}
+      <div className="absolute top-2 right-2 flex gap-1 z-20">
         {!audioEnabled && (
-          <div className="bg-red-600/80 p-2 rounded-full tooltip" title="Muted">
+          <div className="bg-red-600/80 hover:bg-red-700 p-1.5 rounded-full" title="Microphone muted">
             <span className="text-white text-xs">🔇</span>
           </div>
         )}
         {!videoEnabled && (
-          <div className="bg-red-600/80 p-2 rounded-full tooltip" title="Camera off">
+          <div className="bg-red-600/80 hover:bg-red-700 p-1.5 rounded-full" title="Camera off">
             <span className="text-white text-xs">📹</span>
           </div>
         )}
         {isHost && (
-          <div className="bg-blue-600/80 p-2 rounded-full tooltip" title="Host">
+          <div className="bg-blue-600/80 hover:bg-blue-700 p-1.5 rounded-full" title="Host">
             <span className="text-white text-xs">👑</span>
           </div>
         )}
       </div>
 
-      {/* Loading state when stream not yet received */}
+      {/* Connecting State */}
       {!stream && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-5">
-          <div className="text-white text-center">
-            <div className="animate-pulse">
-              <div className="text-xl mb-2">📡</div>
-              <div className="text-xs">Connecting...</div>
-            </div>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+          <div className="text-center">
+            <div className="animate-bounce mb-2">📡</div>
+            <div className="text-white text-xs">Connecting...</div>
           </div>
         </div>
       )}

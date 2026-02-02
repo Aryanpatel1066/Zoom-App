@@ -1,4 +1,4 @@
-// FIXED Meeting Context with Proper WebRTC Initialization
+// CRITICAL FIX: MeetingContext - Remote streams properly captured
 // File: frontend/context/MeetingContext.jsx
 
 import {
@@ -40,10 +40,18 @@ export const MeetingProvider = ({ children }) => {
   const messagesRef = useRef(null);
   const webrtcRef = useRef(null);
   const myUserId = user?._id || user?.id;
+  const remoteStreamsRef = useRef(new Map()); // Keep track of streams
 
-  /* ---------- INITIALIZE WebRTC MANAGER (First!) ---------- */
+  console.log("📱 MeetingContext State:", {
+    socketId: mySocketId,
+    hasLocalStream: !!localStream,
+    participantsCount: participants.length,
+    remoteStreamsCount: remoteStreams.size,
+  });
+
+  /* ---------- INITIALIZE WebRTC MANAGER ---------- */
   useEffect(() => {
-    console.log("📱 Initializing WebRTC Manager...");
+    console.log("🚀 Initializing WebRTC Manager...");
     webrtcRef.current = new WebRTCManager(socket);
     console.log("✅ WebRTC Manager created");
 
@@ -54,73 +62,44 @@ export const MeetingProvider = ({ children }) => {
     };
   }, []);
 
-  /* ---------- GET LOCAL STREAM (After WebRTC Init) ---------- */
+  /* ---------- GET LOCAL STREAM ---------- */
   useEffect(() => {
     const initLocalStream = async () => {
       try {
-        // Check if WebRTC manager is initialized
         if (!webrtcRef.current) {
-          console.warn("⚠️ WebRTC Manager not ready yet");
+          console.warn("⚠️ WebRTC Manager not ready");
           return;
         }
 
         setConnecting(true);
         setConnectionError(null);
 
-        console.log("🎥 Requesting camera/microphone access...");
-        
-        // Request media with fallback for audio only if video fails
-        try {
-          const stream = await webrtcRef.current.getLocalStream();
-          setLocalStream(stream);
-          console.log("✅ Local stream acquired");
-        } catch (err) {
-          console.error("❌ Failed to get camera:", err);
-          
-          // Fallback to audio only
-          try {
-            console.log("📢 Falling back to audio only...");
-            const audioStream = await navigator.mediaDevices.getUserMedia({
-              audio: { echoCancellation: true, noiseSuppression: true },
-              video: false,
-            });
-            setLocalStream(audioStream);
-            console.log("✅ Audio-only stream acquired");
-            setConnectionError("Camera unavailable - using audio only");
-          } catch (audioErr) {
-            console.error("❌ Failed to get audio:", audioErr);
-            setConnectionError("Unable to access camera or microphone");
-            throw audioErr;
-          }
-        }
+        console.log("🎥 Requesting camera/microphone...");
+        const stream = await webrtcRef.current.getLocalStream();
+        setLocalStream(stream);
+
+        webrtcRef.current.toggleAudio(micOn);
+        webrtcRef.current.toggleVideo(camOn);
+
+        console.log("✅ Local stream ready");
       } catch (err) {
-        console.error("❌ Critical error getting local stream:", err);
-        setConnectionError(`Failed to access media: ${err.message}`);
+        console.error("❌ Failed to get local stream:", err.message);
+        setConnectionError(err.message);
       } finally {
         setConnecting(false);
       }
     };
 
-    // Only init stream after user is loaded and WebRTC manager exists
-    if (!loading && user && webrtcRef.current) {
+    if (!loading && user && webrtcRef.current?.localStream === null) {
       initLocalStream();
     }
   }, [loading, user]);
-
-  /* ---------- UPDATE MEDIA CONSTRAINTS WHEN MIC/CAM TOGGLE ---------- */
-  useEffect(() => {
-    if (!webrtcRef.current || !localStream) return;
-
-    console.log(`🔧 Updating media state - Audio: ${micOn}, Video: ${camOn}`);
-    webrtcRef.current.toggleAudio(micOn);
-    webrtcRef.current.toggleVideo(camOn);
-  }, [micOn, camOn, localStream]);
 
   /* ---------- SOCKET CONNECTION & ROOM JOIN ---------- */
   useEffect(() => {
     if (loading || !user || !localStream) return;
 
-    console.log("🔌 Setting up socket connection...");
+    console.log("🔌 Connecting to socket...");
 
     if (!socket.connected) {
       socket.connect();
@@ -130,7 +109,6 @@ export const MeetingProvider = ({ children }) => {
       console.log("⚡ Socket connected:", socket.id);
       setMySocketId(socket.id);
 
-      // Join room with user data
       socket.emit("join-room", {
         roomCode,
         user: {
@@ -142,8 +120,6 @@ export const MeetingProvider = ({ children }) => {
     };
 
     socket.on("connect", handleConnect);
-    
-    // If already connected, call handler immediately
     if (socket.connected) {
       handleConnect();
     }
@@ -157,11 +133,11 @@ export const MeetingProvider = ({ children }) => {
   useEffect(() => {
     if (loading || !user || !webrtcRef.current) return;
 
-    console.log("📡 Setting up WebRTC signaling listeners...");
+    console.log("📡 Setting up WebRTC listeners...");
 
-    // When peer list received, initiate connections
+    // When peer list received
     const handlePeerList = async (peerList) => {
-      console.log("📋 Peer list received:", peerList.length, "peers");
+      console.log("📋 Peer list:", peerList.map((p) => p.socketId));
       for (const peer of peerList) {
         if (peer.socketId !== socket.id) {
           await initiatePeerConnection(peer.socketId);
@@ -171,7 +147,7 @@ export const MeetingProvider = ({ children }) => {
 
     // When new peer joins
     const handlePeerJoined = async (data) => {
-      console.log("👤 Peer joined:", data.socketId, data.name);
+      console.log("👤 New peer joined:", data.socketId, data.name);
       await initiatePeerConnection(data.socketId);
     };
 
@@ -179,16 +155,20 @@ export const MeetingProvider = ({ children }) => {
     const handlePeerLeft = (data) => {
       console.log("👋 Peer left:", data.socketId);
       webrtcRef.current?.closePeerConnection(data.socketId);
-      setRemoteStreams(prev => {
+
+      // IMPORTANT: Remove from remoteStreams
+      setRemoteStreams((prev) => {
         const updated = new Map(prev);
         updated.delete(data.socketId);
+        remoteStreamsRef.current.delete(data.socketId);
+        console.log("🔌 Removed peer stream, remaining:", updated.size);
         return updated;
       });
     };
 
-    // Receive offer
+    // Receive WebRTC offer
     const handleWebRTCOffer = async (data) => {
-      console.log("📥 WebRTC Offer from:", data.from);
+      console.log("📥 Offer from:", data.from);
       try {
         await webrtcRef.current.handleOffer(data.from, data.offer);
       } catch (err) {
@@ -196,9 +176,9 @@ export const MeetingProvider = ({ children }) => {
       }
     };
 
-    // Receive answer
+    // Receive WebRTC answer
     const handleWebRTCAnswer = async (data) => {
-      console.log("📥 WebRTC Answer from:", data.from);
+      console.log("📥 Answer from:", data.from);
       try {
         await webrtcRef.current.handleAnswer(data.from, data.answer);
       } catch (err) {
@@ -236,44 +216,29 @@ export const MeetingProvider = ({ children }) => {
   useEffect(() => {
     if (loading || !user) return;
 
-    console.log("💬 Setting up chat listeners...");
-
     const onParticipantsUpdate = (list) => {
-      console.log("👥 Participants updated:", list.length);
+      console.log("👥 Participants update:", list.length, list.map((p) => p.name));
       setParticipants(list);
     };
 
     const onChatHistory = (msgs) => {
-      console.log("📜 Chat history received:", msgs.length, "messages");
+      console.log("💬 Chat history:", msgs.length);
       const normalized = msgs.map((m) => ({
         ...m,
-        senderName: m.sender?.name || m.senderName || m.sender?.user?.name || "User",
+        senderName: m.sender?.name || m.senderName || "User",
       }));
       setMessages(normalized);
     };
 
     const onNewMessage = (msg) => {
-      console.log("💬 New message from:", msg.senderName);
-      setMessages((prev) => [
-        ...prev,
-        {
-          ...msg,
-          senderName: msg.sender?.name || msg.senderName || msg.sender?.user?.name || "User",
-        },
-      ]);
-      // Auto-scroll to latest message
-      setTimeout(() => {
-        messagesRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+      setMessages((prev) => [...prev, { ...msg, senderName: msg.senderName || msg.sender?.name || "User" }]);
+      setTimeout(() => messagesRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     };
 
     const onMediaStatusUpdate = (data) => {
-      console.log(`🎙️ Media status update from ${data.socketId}:`, { audio: data.audio, video: data.video });
-      setParticipants(prev =>
-        prev.map(p =>
-          p.socketId === data.socketId
-            ? { ...p, mediaStatus: { audio: data.audio, video: data.video } }
-            : p
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.socketId === data.socketId ? { ...p, mediaStatus: { audio: data.audio, video: data.video } } : p
         )
       );
     };
@@ -293,68 +258,84 @@ export const MeetingProvider = ({ children }) => {
 
   /* ---------- ACTIONS ---------- */
 
-  // Initiate peer connection
+  // Initiate peer connection - CRITICAL FIX
   const initiatePeerConnection = useCallback(async (peerId) => {
     try {
       if (!webrtcRef.current) {
-        console.warn("⚠️ WebRTC Manager not available");
+        console.warn("⚠️ WebRTC not ready");
         return;
       }
 
-      console.log(`🤝 Initiating peer connection with ${peerId}`);
+      console.log(`🤝 Initiating connection with ${peerId}`);
 
       const peerConnection = webrtcRef.current.createPeerConnection(
         peerId,
         (peerId, stream) => {
-          console.log("🎥 Got remote stream from peer:", peerId);
-          setRemoteStreams(prev => {
+          console.log(`🎥 RECEIVED REMOTE STREAM from ${peerId}:`, {
+            audioTracks: stream.getAudioTracks().length,
+            videoTracks: stream.getVideoTracks().length,
+          });
+
+          // CRITICAL: Store in both ref and state
+          remoteStreamsRef.current.set(peerId, stream);
+          
+          // Update state to trigger re-render
+          setRemoteStreams((prev) => {
             const updated = new Map(prev);
             updated.set(peerId, stream);
+            console.log(`✅ Remote streams count: ${updated.size}`);
             return updated;
           });
         }
       );
 
-      // Wait a bit then send offer
+      // Send offer after delay
       setTimeout(async () => {
         try {
           await webrtcRef.current.createAndSendOffer(peerId);
+          console.log(`✅ Offer sent to ${peerId}`);
         } catch (err) {
-          console.error("❌ Error sending offer to", peerId, ":", err);
+          console.error(`❌ Error sending offer to ${peerId}:`, err);
         }
-      }, 200);
+      }, 300);
     } catch (err) {
       console.error("❌ Error initiating peer connection:", err);
     }
   }, []);
 
   // Toggle microphone
-  const toggleMic = useCallback((enable) => {
-    console.log("🎙️ Toggle microphone:", enable ? "ON" : "OFF");
-    setMicOn(enable);
-    socket.emit("media-status", {
-      roomCode,
-      audio: enable,
-      video: camOn,
-    });
-  }, [roomCode, camOn]);
+  const toggleMic = useCallback(
+    (enable) => {
+      console.log("🎙️ Toggle mic:", enable ? "ON" : "OFF");
+      setMicOn(enable);
+      webrtcRef.current?.toggleAudio(enable);
+      socket.emit("media-status", {
+        roomCode,
+        audio: enable,
+        video: camOn,
+      });
+    },
+    [roomCode, camOn]
+  );
 
   // Toggle camera
-  const toggleCamera = useCallback((enable) => {
-    console.log("📹 Toggle camera:", enable ? "ON" : "OFF");
-    setCamOn(enable);
-    socket.emit("media-status", {
-      roomCode,
-      audio: micOn,
-      video: enable,
-    });
-  }, [roomCode, micOn]);
+  const toggleCamera = useCallback(
+    (enable) => {
+      console.log("📹 Toggle camera:", enable ? "ON" : "OFF");
+      setCamOn(enable);
+      webrtcRef.current?.toggleVideo(enable);
+      socket.emit("media-status", {
+        roomCode,
+        audio: micOn,
+        video: enable,
+      });
+    },
+    [roomCode, micOn]
+  );
 
   // Send message
   const sendMessage = useCallback(() => {
     if (!text.trim()) return;
-
-    console.log("📤 Sending message...");
     socket.emit("send-message", {
       roomCode,
       roomId,
@@ -364,7 +345,6 @@ export const MeetingProvider = ({ children }) => {
         name: user.firstName || user.name,
       },
     });
-
     setText("");
   }, [text, roomCode, roomId, user, myUserId]);
 
@@ -379,7 +359,7 @@ export const MeetingProvider = ({ children }) => {
     navigate("/landing");
   }, [roomCode, navigate]);
 
-  /* ---------- VALUE MEMO ---------- */
+  /* ---------- CONTEXT VALUE ---------- */
   const value = useMemo(
     () => ({
       participants,
@@ -394,7 +374,7 @@ export const MeetingProvider = ({ children }) => {
       messagesRef,
       endCall,
       localStream,
-      remoteStreams,
+      remoteStreams, // This is the critical state
       micOn,
       camOn,
       toggleMic,
@@ -422,11 +402,7 @@ export const MeetingProvider = ({ children }) => {
     ]
   );
 
-  return (
-    <MeetingContext.Provider value={value}>
-      {children}
-    </MeetingContext.Provider>
-  );
+  return <MeetingContext.Provider value={value}>{children}</MeetingContext.Provider>;
 };
 
 export const useMeeting = () => {
