@@ -2,6 +2,7 @@
 // File: frontend/components/meet/MeetStage.jsx
 
 import { memo, useEffect, useRef, useMemo } from "react";
+import React from "react"; // ADD THIS LINE
 import { useMeeting } from "../../context/MeetingContext";
 
 function MeetStage() {
